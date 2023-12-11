@@ -1,5 +1,6 @@
 import data_generator as dg
 import os
+
 output_directory = '/home/ystolero/Documents/Research/Simulation/data/test'
 seed = 311
 

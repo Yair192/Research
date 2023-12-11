@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def rmse_calc(pred, real):
-    return np.sqrt(np.mean(np.sum((pred - real) ** 2, axis=1)))
+    return np.sqrt(np.mean(np.sum((pred - real) ** 2, axis=0)))
 
 
 def load_data(imu_to_load, n, num_of_samples, num_of_axis, folder_path):

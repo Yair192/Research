@@ -11,11 +11,12 @@ class CFG:
         self.num_of_samples = self.f * self.t
         self.N = 50
         self.IMU_to_simulate = 16
-        self.IMU_to_test = 1
-        self.IMU_to_train = 16
-        self.runs = 10
+        self.IMU_to_test = 16
+        self.IMU_to_train = 10
+        self.runs = 3
         self.deg_h_to_rad_s = (np.pi / 180) * (1 / 3600)
         self.rad_s_to_deg_s = 180 / np.pi
+        self.rad_s_to_deg_h = 3600 / (2 * np.pi)
         self.bias = 10 * self.deg_h_to_rad_s
         self.num_of_axis = 1
         self.input_channels = 1
