@@ -61,7 +61,7 @@ plt.bar(x_axis, RMSE_avg_all_running * Config.rad_s_to_deg_h, width)
 plt.xticks(x_axis, fontsize=24)
 plt.tick_params(labelsize=18)
 plt.xlabel('Num of IMU', fontsize=24)
-plt.ylabel('RMSE [deg/sec]', fontsize=24)
+plt.ylabel('RMSE [deg/hour]', fontsize=24)
 plt.title('RMSE for simualted data - predicted vs test - as number of trained IMU', fontsize=24)
 
 # Show the plot
