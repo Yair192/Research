@@ -1,30 +1,28 @@
 import os
 import time
 import numpy as np
-import cnn_1d_model as CNNet
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from matplotlib import pyplot as plt
+import cnn_1d_model as CNNet
 from torch.utils.data import TensorDataset, DataLoader
+from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 from data_generator import CFG
+from utils import create_segments_and_labels
 
 seed = 111
 np.random.seed(seed)
-torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
 
 Config = CFG()
-
-x_train_all = np.load('x_train.npy')
-y_train_all = np.load('y_train.npy')
-
-print("The X train all shape is:", x_train_all.shape)
-print("The y train all shape is:", y_train_all.shape)
+os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
+x_train_all = np.load('x_train.npy') * Config.deg_s_to_deg_h
+y_train_all = np.load('y_train.npy') * Config.deg_s_to_deg_h
 
 for k in range(Config.runs):
-    x_train_merged = np.zeros((Config.N, 0, Config.num_of_samples))
-    y_train_merged = np.zeros((Config.N, 0))
+    x_train_merged = np.zeros((Config.num_of_windows, 0, Config.window_size))
+    y_train_merged = np.zeros((Config.num_of_windows, 0))
     RMSE_list = []
     input_channels = 0
     for i in range(Config.IMU_to_train):
@@ -34,16 +32,25 @@ for k in range(Config.runs):
         input_channels += 1
 
         # Get the IMU data
-        X, y = x_train_all[i], y_train_all[i]
+        X, y = x_train_all[i, :, :, 0:Config.samples_to_train], y_train_all[i]
 
-        x_train_merged = np.concatenate((x_train_merged, X), axis=1)
-        y_train_merged = np.concatenate((y_train_merged, y), axis=1)
+        X_win, y_win = create_segments_and_labels(np.squeeze(X, axis=1), np.squeeze(y, axis=1), Config.window_size,
+                                                  Config.step_for_train, Config.ratio_window_to_step_for_train)
+        X_win = np.expand_dims(X_win, axis=1)
+        y_win = np.expand_dims(y_win, axis=1)
+
+        x_train_merged = np.concatenate((x_train_merged, X_win), axis=1)
+        y_train_merged = np.concatenate((y_train_merged, y_win), axis=1)
 
         # Reset the model
 
-        model = CNNet.CNN1D(Config.input_channels)
+        model = CNNet.CNN1DRaiseInput(input_channels)
+        # model = CNNet.LSTMGyro(input_channels, CNNet.lstm_units, CNNet.dense_units, input_channels)
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters(), lr=CNNet.learning_rate)
+        # optimizer = optim.Adam(model.parameters(), lr=CNNet.learning_rate)
+        optimizer = optim.RMSprop(model.parameters(), lr=CNNet.learning_rate)
+        # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.01)
+
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
 
@@ -55,7 +62,7 @@ for k in range(Config.runs):
         X_val = torch.Tensor(X_val)
         y_val = torch.Tensor(y_val)
         train_dataset = TensorDataset(X_train, y_train)
-        train_loader = DataLoader(train_dataset, batch_size=CNNet.batch_size, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=CNNet.batch_size, shuffle=False)
         val_dataset = TensorDataset(X_val, y_val)
         val_loader = DataLoader(val_dataset, batch_size=CNNet.batch_size, shuffle=False)
 
@@ -64,6 +71,7 @@ for k in range(Config.runs):
         train_losses = []
         val_losses = []
         # Training loop
+        min_val = 100000000
         for epoch in range(CNNet.epochs):
             model.train()
             running_loss = 0.0
@@ -76,7 +84,7 @@ for k in range(Config.runs):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
                 # forward + backward + optimize
-                outputs = model(inputs, input_channels)  # forward pass
+                outputs = model(inputs)  # forward pass
                 loss = criterion(outputs, labels)  # calculate the loss
                 # always the same 3 steps
                 optimizer.zero_grad()  # zero the parameter gradients
@@ -85,6 +93,9 @@ for k in range(Config.runs):
 
                 # print statistics
                 running_loss += loss.data.item()
+
+            # StepLR scheduler step (update the learning rate)
+            # scheduler.step()
 
             # Normalizing the loss by the total number of train batches
             running_loss /= len(train_loader)
@@ -100,7 +111,7 @@ for k in range(Config.runs):
                     inputs, labels = data
                     inputs = inputs.to(device)
                     labels = labels.to(device)
-                    outputs = model(inputs, input_channels)
+                    outputs = model(inputs)
                     val_loss += criterion(outputs, labels).data.item()
 
             val_loss /= len(val_loader)
@@ -112,7 +123,8 @@ for k in range(Config.runs):
             print(log)
 
             # save model
-            if epoch == 4:
+            if val_loss < min_val:
+                min_val = val_loss
                 print('==> Saving model ...')
                 state = {
                     'net': model.state_dict(),
@@ -124,15 +136,15 @@ for k in range(Config.runs):
                            f'//home/ystolero/Documents/Research/Simulation/checkpoints_raise_input/run_{k}/1d_cnn_ckpt_{i}.pth')
         print('==> Finished Training ...')
 
-        # plot the loss curves
-        x_epoch = list(range(1, CNNet.epochs + 1))
-        plt.figure(figsize=(20, 6))  # Specify width and height in inches
-        plt.plot(x_epoch, train_losses, label='Training  loss')
-        plt.plot(x_epoch, val_losses, label='Validation  loss')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        plt.xticks(x_epoch)
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        # # plot the loss curves
+        # x_epoch = list(range(1, CNNet.epochs + 1))
+        # plt.figure(figsize=(20, 6))  # Specify width and height in inches
+        # plt.plot(x_epoch, train_losses, label='Training  loss')
+        # plt.plot(x_epoch, val_losses, label='Validation  loss')
+        # plt.xlabel('Epochs')
+        # plt.ylabel('Loss')
+        # plt.xticks(x_epoch)
+        # plt.grid(True)
+        # plt.legend()
+        # plt.tight_layout()
+        # plt.show()
