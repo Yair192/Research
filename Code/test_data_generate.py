@@ -3,7 +3,7 @@ import os
 
 os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
 father_dir = '/home/ystolero/Documents/Sim_data'
-output_directory = '/home/ystolero/Documents/Sim_data/test_like_real'
+output_directory = '/home/ystolero/Documents/Sim_data/test'
 seed = 311
 
 if not os.path.exists(father_dir):

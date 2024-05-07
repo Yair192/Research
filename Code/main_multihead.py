@@ -17,13 +17,11 @@ torch.manual_seed(seed)
 
 Config = CFG()
 os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
-# x_train_all = np.load('x_train.npy') * Config.deg_s_to_deg_h
-# y_train_all = np.load('y_train.npy') * Config.deg_s_to_deg_h
-x_train_all = np.load('/home/ystolero/Documents/Research/bias_data_from_slam_course_dots/data_array.npy')
-y_train_all = np.mean(x_train_all, axis=3)
+x_train_all = np.load('x_train.npy') * Config.deg_s_to_deg_h
+y_train_all = np.load('y_train.npy') * Config.deg_s_to_deg_h
 for k in range(Config.runs):
-    x_train_merged = np.zeros((Config.num_of_windows_train, 0, Config.window_size))
-    y_train_merged = np.zeros((Config.num_of_windows_train, 0))
+    x_train_merged = np.zeros((Config.num_of_windows, 0, Config.window_size))
+    y_train_merged = np.zeros((Config.num_of_windows, 0))
     RMSE_list = []
     input_channels = 0
     for i in range(Config.IMU_to_train):

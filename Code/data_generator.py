@@ -2,48 +2,39 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-
 os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
+
 
 class CFG:
     def __init__(self):
-        self.f = 148
-        self.dt = 1 / self.f
+        self.f = 120
         self.t = 108
-        self.t_check = 10
-        self.time_for_train = self.t_check
-        self.time_for_model_based = self.t_check
-        self.time_for_train_window = 2
-        self.time_for_test_window = self.t_check
-        self.time_for_train_step = 1
-        self.time_for_test_step = self.t_check
-        self.time_for_gt = 120
-        self.records_to_train = 80
+        self.time_for_train = 30
+        self.time_for_model_based = 60
+        self.time_for_train_window = 30
+        self.time_for_test_window = 60
+        self.time_for_train_step = 30
+        self.time_for_test_step = 30
         self.N_to_simulate = 100
         self.N_to_load = 100
         self.num_of_samples = self.f * self.t
-        self.t_arr = np.arange(0, 13000 * self.dt, self.dt)
         self.samples_to_model_based = self.f * self.time_for_model_based
         self.samples_to_train = self.f * self.time_for_train
-        self.samples_to_gt = self.f * self.time_for_gt
         self.window_size = self.time_for_train_window * self.f
         self.step_size = self.time_for_test_step * self.f
         self.step_for_train = self.time_for_train_step * self.f
         self.ratio_window_to_step = int(self.window_size / self.step_size)
         self.ratio_window_to_step_for_train = int(self.window_size / self.step_for_train)
-        self.num_of_windows_train = int((self.samples_to_train - self.window_size) / self.step_for_train) + 1
-        self.num_of_windows_test = int((self.samples_to_train - self.window_size) / self.step_for_train) + 1
+        self.num_of_windows_train = (int((self.samples_to_train - self.window_size) / self.step_for_train) + 1) * self.N_to_load
+        self.num_of_windows_test = (int((self.samples_to_train - self.window_size) / self.step_size) + 1) * self.N_to_load
         self.IMU_to_simulate = 14
         self.IMU_to_test = 1
-        self.IMU_to_train = 6
-        self.imu_to_train = [0, 1, 2, 3, 4, 5, 6, 7]
-        self.test_imu_ind = 0
+        self.IMU_to_train = 10
         self.runs = 1
         self.deg_h_to_deg_s = 1 / 3600
         self.deg_s_to_deg_h = 1 / self.deg_h_to_deg_s
-        self.deg_s_to_rad_s = 1
         self.bias = 0.02666096
-        self.bias_std = 1
+        self.bias_std = 0
         self.noise_std = 0.1
         self.num_of_axis = 1
         self.input_channels = 1
@@ -53,12 +44,6 @@ class Simulation:
     def __init__(self, Config: CFG):
         self.Config = Config
 
-    def add_random_walk(self, single_gyro_data):
-        rw = np.cumsum(np.random.randn(self.Config.num_of_samples)*0.00025)
-        rw_data = single_gyro_data + rw
-        return rw_data
-
-
     def add_white_noise(self, single_gyro_data):
         noise = np.random.normal(0.0, self.Config.noise_std, (self.Config.num_of_axis, self.Config.num_of_samples))
         return single_gyro_data + noise
@@ -67,7 +52,7 @@ class Simulation:
         return single_gyro_data + bias
 
     def create_single_gyro_data(self):
-        bias_rand = np.random.normal(np.random.rand(), self.Config.bias_std, self.Config.num_of_axis)
+        bias_rand = np.random.normal(self.Config.bias, self.Config.bias_std, self.Config.num_of_axis)
         # bias_rand = self.Config.bias
         single_gyro_data = np.zeros([self.Config.num_of_axis, self.Config.num_of_samples])
         single_gyro_data = self.add_bias(single_gyro_data, bias_rand)

@@ -1,10 +1,10 @@
-import os
 import torch.nn as nn
 import torch
 import torchvision.models as models  # Import ResNet model
 from data_generator import CFG
 
-os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
+
+
 
 Config = CFG()
 ## START Raise input data parameters
@@ -13,20 +13,18 @@ Config = CFG()
 # Train for 10 seconds
 # Window size of 5 seconds with step 5
 
-learning_rate = 0.0001
-batch_size = 8
-epochs = 300
-
-
+learning_rate = 0.01
+batch_size = 1
+epochs = 5
 ## END Raise input data parameters
 
 
-# ## START Raise axis parameters
-# learning_rate = 0.0001
-# batch_size = 64
-# epochs = 300
-# lstm_units = 1
-# dense_units = 1
+## START Raise axis parameters
+# learning_rate = 0.5
+# batch_size = 4
+# epochs = 100כאי
+# lstm_units = 4
+# dense_units = 4
 # output_units = 1
 
 
@@ -38,52 +36,45 @@ epochs = 300
 # epochs = 50
 ## END Multihead parameters
 
-
-
-
-
 class CNN1D(nn.Module):
     def __init__(self, input_ch):
         super(CNN1D, self).__init__()
 
         slope = 0.1
-        kernel = 5
+        kernel = 10
         stride = 1
         self.model_m = nn.Sequential(
             nn.Conv1d(in_channels=input_ch, out_channels=3, kernel_size=kernel, stride=stride),
             nn.LeakyReLU(negative_slope=slope),
-            nn.MaxPool1d(kernel_size=10),
+            # nn.Conv1d(in_channels=3, out_channels=6, kernel_size=kernel, stride=stride),
+            # nn.LeakyReLU(negative_slope=slope)
         )
 
         # Calculate the number of features after convolution layers
-        # self.num_features = self._calculate_num_features(input_ch)
+        self.num_features = self._calculate_num_features(input_ch)
 
-        self.fc_1 = nn.Linear(87, 1)
-        # self.fc_2 = nn.Linear(16, 1)
-        # self.fc_3 = nn.Linear(8, 1)
+        self.fc_1 = nn.Linear(self.num_features, 1)
+        # self.fc_2 = nn.Linear(512, 128)
+        # self.fc_3 = nn.Linear(128, 1)
 
-    # def _calculate_num_features(self, input_ch):
-    #     # Create a temporary tensor to get the output shape after convolution layers
-    #     with torch.no_grad():
-    #         temp_tensor = torch.zeros(1, Config.window_size)
-    #         temp_output = self.model_m(temp_tensor)
-    #         num_features = temp_output.view(temp_output.size(0), -1).shape[1]
-    #     return num_features
+    def _calculate_num_features(self, input_ch):
+        # Create a temporary tensor to get the output shape after convolution layers
+        with torch.no_grad():
+            temp_tensor = torch.zeros(1, input_ch, Config.window_size)
+            temp_output = self.model_m(temp_tensor)
+            num_features = temp_output.view(temp_output.size(0), -1).shape[1]
+        return num_features
 
     def forward(self, x):
-        batch = x.shape[0]
-        x_mean = torch.mean(x, dim=1)
-        x_mean = torch.reshape(x_mean, (batch,1))
-        x = x.unsqueeze(1)
         x = self.model_m(x)
-        x = torch.flatten(x, start_dim=1)
-        # x = torch.cat((x, x_mean), dim=1)
+        x = x.view(x.size(0), -1)
         x = self.fc_1(x)
-        # x = torch.nn.functional.leaky_relu(x, 0.1)
+        x = torch.nn.functional.leaky_relu(x, 0.1)
+        # x = torch.nn.functional.tanh(x)
         # x = self.fc_2(x)
         # x = torch.nn.functional.leaky_relu(x, 0.1)
+        # x = torch.nn.functional.tanh(x)
         # x = self.fc_3(x)
-        x = x.squeeze()
         return x
 
 
@@ -99,8 +90,6 @@ class LSTMGyro(nn.Module):
         # Assuming x is a tensor with shape (batch_size, input_channels, num_samples)
 
         # LSTM layer
-
-        x = x.unsqueeze(1)
         lstm_output, _ = self.lstm(x.transpose(1, 2))  # Transpose to (batch_size, num_samples, input_channels)
 
         # Dense layer
@@ -108,7 +97,7 @@ class LSTMGyro(nn.Module):
 
         # Output layer
         output = self.output_layer(dense_output)
-        output = torch.squeeze(output, dim=1)
+
         return output
 
 
@@ -148,11 +137,9 @@ class CNN1DRaiseInput(nn.Module):
         x = self.model_m(x)
         x = x.view(x.size(0), -1)
         x = self.fc_1(x)
-        # x = torch.nn.functional.leaky_relu(x, 0.1)
-        x = torch.nn.functional.tanh(x)
+        x = torch.nn.functional.leaky_relu(x, 0.1)
         x = self.fc_2(x)
-        # x = torch.nn.functional.leaky_relu(x, 0.1)
-        x = torch.nn.functional.tanh(x)
+        x = torch.nn.functional.leaky_relu(x, 0.1)
         x = self.fc_3(x)
         return x
 
@@ -210,3 +197,49 @@ class MultiHeadCNN(nn.Module):
         fc_output = self.fc_3(fc_output)
         fc_output = torch.nn.functional.leaky_relu(fc_output, 0.1)
         return fc_output
+
+class ResNet1D(nn.Module):
+    def __init__(self, input_channels: int = 1, output_features: int = 1, drop_out: float = 0.5):
+        super(ResNet1D, self).__init__()
+
+        self.input_channels = input_channels
+        self.output_features = output_features
+
+        self.model = models.resnet18()
+        expansion = 1  # 4 for resnet50
+
+        self.model.conv1 = nn.Conv2d(self.input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.model.fc = nn.Linear(512*expansion, self.output_features)
+
+        self.dp1 = nn.Dropout(drop_out)
+
+    def forward(self, x):
+        x = torch.unsqueeze(x, dim=1)
+        return self.model(x)
+
+# class ResNet1D(nn.Module):
+#     def __init__(self, input_channels=1, num_classes=1):
+#         super(ResNet1D, self).__init__()
+#         self.resnet = models.resnet18(pretrained=False)  # Load ResNet-18
+#         # Replace the first convolutional layer to adapt for 1D data
+#         self.resnet.conv1 = nn.Conv1d(input_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
+#         # Replace the fully connected layer for regression
+#         self.resnet.fc = nn.Linear(512, num_classes)
+#
+#     def forward(self, x):
+#         # Ensure input is 3D (batch size, channels, sequence length)
+#         x = x.unsqueeze(2)  # Add dummy height dimension
+#         x = self.resnet.conv1(x)
+#         x = self.resnet.bn1(x)
+#         x = self.resnet.relu(x)
+#         x = self.resnet.maxpool(x)
+#
+#         x = self.resnet.layer1(x)
+#         x = self.resnet.layer2(x)
+#         x = self.resnet.layer3(x)
+#         x = self.resnet.layer4(x)
+#
+#         x = F.adaptive_avg_pool1d(x, 1)
+#         x = torch.flatten(x, 1)
+#         x = self.resnet.fc(x)
+#         return x

@@ -12,12 +12,8 @@ torch.manual_seed(seed)
 Config = CFG()
 
 plt.close('all')
-# x_test_all = np.load('/home/ystolero/Documents/Research/Simulation/Code/x_test.npy') * Config.deg_s_to_deg_h
-# y_test_all = np.load('/home/ystolero/Documents/Research/Simulation/Code/y_test.npy') * Config.deg_s_to_deg_h
-
-x_test_all = np.load('/home/ystolero/Documents/Research/bias_data_from_slam_course_dots/data_array.npy')
-y_test_all = np.mean(x_test_all, axis=3)
-
+x_test_all = np.load('/home/ystolero/Documents/Research/Simulation/Code/x_test.npy') * Config.deg_s_to_deg_h
+y_test_all = np.load('/home/ystolero/Documents/Research/Simulation/Code/y_test.npy') * Config.deg_s_to_deg_h
 rmse_model_based = rmse_model_based_calc()
 print("The RMSE model based is:", rmse_model_based)
 
@@ -25,10 +21,8 @@ RMSE_avg_1_to_IMU_avg = np.zeros([Config.N_to_load, Config.IMU_to_train])
 device = 'cpu'
 
 for k in range(Config.runs):
-    # x_test_merged = np.zeros((Config.num_of_windows, 0, Config.window_size))
-    # y_test_merged = np.zeros((Config.num_of_windows, 0))
-    x_test_merged = np.zeros((Config.num_of_windows_test, 0, Config.window_size))
-    y_test_merged = np.zeros((Config.num_of_windows_test, 0))
+    x_test_merged = np.zeros((Config.num_of_windows, 0, Config.window_size))
+    y_test_merged = np.zeros((Config.num_of_windows, 0))
     input_channels = 0
     for i in range(Config.IMU_to_train):
         input_channels += 1

@@ -3,8 +3,8 @@ import os
 
 
 
-# os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
-output_directory = '/home/ystolero/Documents/Sim_data/train_like_real'
+os.chdir('/home/ystolero/Documents/Research/Simulation/Code/')
+output_directory = '/home/ystolero/Documents/Sim_data/train'
 seed = 211
 
 if not os.path.exists(output_directory):
