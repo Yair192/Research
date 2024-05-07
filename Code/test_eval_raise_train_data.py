@@ -4,7 +4,7 @@ import torch
 import cnn_1d_model as CNNet
 from matplotlib import pyplot as plt
 from data_generator import CFG
-from utils import rmse_calc, rmse_model_based_calc, create_seg_for_single_gyro, running_avg, rmse_for_every_sample, running_avg_rmse
+from utils import rmse_calc, rmse_model_based_calc, create_seg_for_single_gyro, running_avg
 
 
 
@@ -14,6 +14,8 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 
 Config = CFG()
+
+
 
 def find_indices(arr, value):
     indices = []
@@ -34,9 +36,13 @@ y_train_all = np.load("y_data_sim.npy") * Config.deg_s_to_rad_s
 
 
 x_test_1_all_samples = x_train_all[Config.test_imu_ind, Config.records_to_train:]
-x_test_1 = x_train_all[Config.test_imu_ind, Config.records_to_train:, 0:Config.samples_to_train]
+x_test_1 = x_train_all[Config.test_imu_ind, Config.records_to_train:, :, 0:Config.samples_to_train]
 y_test_1 = y_train_all[Config.test_imu_ind, Config.records_to_train:]
-y_mean_all = np.mean(y_test_1)
+y_mean_all = np.mean(y_test_1, axis=0)
+y_mean_all_arr = np.empty([Config.input_channels, 13000])
+y_mean_all_arr[0] = y_mean_all[0]
+y_mean_all_arr[1] = y_mean_all[1]
+y_mean_all_arr[2] = y_mean_all[2]
 x_test_1_win, y_test_1_win = create_seg_for_single_gyro(x_test_1, y_test_1, Config.window_size, Config.step_for_train)
 
 
@@ -54,7 +60,7 @@ print(f"The RMSE at the end of {Config.t} sec is:", rmse_end_of_record / Config.
 
 RMSE_avg_1_to_IMU_avg = np.zeros([Config.runs, Config.IMU_to_train])
 NN_vs_model_percentage = np.zeros(Config.IMU_to_train)
-y_pred_mean = np.zeros(Config.IMU_to_train)
+y_pred_mean = np.zeros([Config.IMU_to_train, Config.input_channels])
 device = 'cpu'
 
 for k in range(Config.runs):
@@ -71,8 +77,8 @@ for k in range(Config.runs):
 
         y_pred = model(x_test_1.to(device))
         y_pred = y_pred.cpu().detach().numpy()
-        y_pred_mean[i] = np.mean(y_pred)
-        RMSE_avg_1_to_IMU_avg[k, j] = rmse_calc(y_pred, y_test_1.numpy())
+        y_pred_mean[i] = np.mean(y_pred, axis=0)
+        # RMSE_avg_1_to_IMU_avg[k, j] = rmse_calc(y_pred, y_test_1.numpy())
 
         j += 1
 
@@ -81,7 +87,7 @@ RMSE_avg_all_running = np.mean(RMSE_avg_1_to_IMU_avg, axis=0)
 print(f"The test loss is {RMSE_avg_all_running**2}")
 print(f"The NN RMSE is{RMSE_avg_all_running / Config.deg_s_to_rad_s}")
 
-NN_vs_model_percentage = (RMSE_avg_all_running - rmse_model_based) / rmse_model_based *100
+# NN_vs_model_percentage = (RMSE_avg_all_running - rmse_model_based) / rmse_model_based *100
 
 print(f"NN vs model based percetnage is {NN_vs_model_percentage}")
 
@@ -112,17 +118,17 @@ print(f"NN vs model based percetnage is {NN_vs_model_percentage}")
 #
 x_test_1_all_samples_avg = np.mean(x_test_1_all_samples, axis=0)
 x_test_running_avg = running_avg(x_test_1_all_samples_avg)
-L1_RA_X_test = np.abs(x_test_running_avg - y_mean_all) / Config.deg_s_to_rad_s
+L1_RA_X_test = rmse_calc(x_test_running_avg, y_mean_all_arr) / Config.deg_s_to_rad_s
 
 
 plt.plot(Config.t_arr, L1_RA_X_test)
-plt.scatter(Config.t_check, np.abs(y_pred_mean[0] - y_mean_all) / Config.deg_s_to_rad_s, label = "1 IMU")
+plt.scatter(Config.t_check, rmse_calc(y_pred_mean[0], y_mean_all) / Config.deg_s_to_rad_s, label = "1 IMU")
 # plt.scatter(Config.t_check, np.abs(y_pred_mean[1] - y_mean_all) / Config.deg_s_to_rad_s, label = "L1 - 2")
-plt.scatter(Config.t_check, np.abs(y_pred_mean[2] - y_mean_all) / Config.deg_s_to_rad_s, label = "2 IMU")
+plt.scatter(Config.t_check, rmse_calc(y_pred_mean[1] ,y_mean_all) / Config.deg_s_to_rad_s, label = "2 IMU")
 # plt.scatter(Config.t_check, np.abs(y_pred_mean[3] - y_mean_all) / Config.deg_s_to_rad_s, label = "L1 - 4")
 # plt.scatter(Config.t_check, np.abs(y_pred_mean[4] - y_mean_all) / Config.deg_s_to_rad_s, label = "L1 - 5")
-plt.scatter(Config.t_check, np.abs(y_pred_mean[5] - y_mean_all) / Config.deg_s_to_rad_s, label = "3 IMU")
-
+plt.scatter(Config.t_check, rmse_calc(y_pred_mean[2] , y_mean_all) / Config.deg_s_to_rad_s, label = "3 IMU")
+plt.scatter(Config.t_check, rmse_calc(y_pred_mean[3] , y_mean_all) / Config.deg_s_to_rad_s, label = "4 IMU")
 # plt.scatter(5, 0.00124874, label = "L1 - 5 sec")
 # plt.scatter(10, 0.00120255, label = "L1 - 10 sec - Data from 1 Axis only")
 # plt.scatter(10, 4.35437566e-05, label = "L1 - 10 sec - When averaging 12 axis into 1 VIMU")
@@ -139,9 +145,9 @@ plt.xlabel('Time [sec]')
 # plt.ylabel('L1 [deg/sec]')
 plt.show()
 
-for i in range(Config.IMU_to_train):
-    index = find_indices(L1_RA_X_test, np.abs(y_pred_mean - y_mean_all)[i])[-1] / Config.f
-
-    percentage_of_improve = ((index - Config.t_check) / index) * 100
-
-    print(f"The percentage of improvement for {i+1} IMU is {percentage_of_improve}")
+# for i in range(Config.IMU_to_train):
+#     index = find_indices(L1_RA_X_test, np.abs(y_pred_mean - y_mean_all)[i])[-1] / Config.f
+#
+#     percentage_of_improve = ((index - Config.t_check) / index) * 100
+#
+#     print(f"The percentage of improvement for {i+1} IMU is {percentage_of_improve}")

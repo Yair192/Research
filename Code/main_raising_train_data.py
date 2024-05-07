@@ -52,8 +52,8 @@ for k in range(Config.runs):
     # x_train_merged = np.zeros((0, Config.num_of_windows_train, Config.window_size))
     # y_train_merged = np.zeros((0, Config.num_of_windows_train))
 
-    x_train_merged = np.zeros((0, Config.window_size))
-    y_train_merged = np.zeros(0)
+    x_train_merged = np.zeros([0, Config.input_channels , Config.window_size])
+    y_train_merged = np.zeros([0, Config.input_channels])
     RMSE_list = []
     records_index = 0
     for i in range(Config.IMU_to_train):
@@ -61,7 +61,7 @@ for k in range(Config.runs):
         print(f"Run Number: {k + 1} IMU Number: {i + 1}")
         # Get the IMU data
         if i == Config.test_imu_ind:
-            X, y = x_train_all[i, :Config.records_to_train, 0:Config.samples_to_train], y_train_all[i, :Config.records_to_train]
+            X, y = x_train_all[i, :Config.records_to_train, :, 0:Config.samples_to_train], y_train_all[i, :Config.records_to_train]
         else:
             X, y = x_train_all[i, :, 0:Config.samples_to_train], y_train_all[i, :]
 
@@ -74,9 +74,9 @@ for k in range(Config.runs):
         # Reset the model
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = CNNet.CNN1D(Config.input_channels).to(device)
-        # criterion = nn.MSELoss()
+        criterion = nn.MSELoss()
         # criterion = nn.L1Loss()
-        criterion = CustomLoss(lambda_1, lambda_2)
+        # criterion = CustomLoss(lambda_1, lambda_2)
 
 
         optimizer = optim.Adam(model.parameters(), lr=CNNet.learning_rate)
@@ -109,9 +109,9 @@ for k in range(Config.runs):
                 labels = labels.to(device)
                 optimizer.zero_grad()
                 # forward + backward + optimize
-                mean = torch.mean(inputs, dim=1)
+                mean = torch.mean(inputs, dim=2)
                 outputs = model(inputs)  # forward pass
-                loss = criterion(outputs, labels, mean)  # calculate the loss
+                loss = criterion(outputs, labels)  # calculate the loss
 
                 # always the same 3 steps
                 optimizer.zero_grad()  # zero the parameter gradients

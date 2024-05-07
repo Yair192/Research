@@ -35,7 +35,7 @@ class CFG:
         self.num_of_windows_test = int((self.samples_to_train - self.window_size) / self.step_for_train) + 1
         self.IMU_to_simulate = 14
         self.IMU_to_test = 1
-        self.IMU_to_train = 6
+        self.IMU_to_train = 4
         self.imu_to_train = [0, 1, 2, 3, 4, 5, 6, 7]
         self.test_imu_ind = 0
         self.runs = 1
@@ -46,7 +46,7 @@ class CFG:
         self.bias_std = 1
         self.noise_std = 0.1
         self.num_of_axis = 1
-        self.input_channels = 1
+        self.input_channels = 3
 
 
 class Simulation:
