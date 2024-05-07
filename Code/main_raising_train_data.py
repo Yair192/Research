@@ -20,14 +20,18 @@ Config = CFG()
 x_train_all = np.load('/home/ystolero/Documents/Research/bias_data_from_slam_course_dots/data_array.npy')
 y_train_all = np.mean(x_train_all, axis=3)
 for k in range(Config.runs):
-    x_train_merged = np.zeros((0, Config.input_channels, Config.window_size))
-    y_train_merged = np.zeros((0, Config.input_channels))
+    # x_train_merged = np.zeros((0, Config.num_of_windows_train, Config.window_size))
+    # y_train_merged = np.zeros((0, Config.num_of_windows_train))
+
+    x_train_merged = np.zeros([0, Config.input_channels , Config.window_size])
+    y_train_merged = np.zeros([0, Config.input_channels])
     RMSE_list = []
     for i in range(Config.IMU_to_train):
         print(f"Run Number: {k + 1} IMU Number: {i + 1}")
         # Get the IMU data
-        if i == 0:
-            X, y = x_train_all[i, :90, :, 0:Config.samples_to_train], y_train_all[i, :90]
+        if i == Config.test_imu_ind:
+            X, y = x_train_all[i, :Config.records_to_train, :, 0:Config.samples_to_train], y_train_all[i, :Config.records_to_train]
+
         else:
             X, y = x_train_all[i, :, :, 0:Config.samples_to_train], y_train_all[i, :]
 
@@ -40,15 +44,15 @@ for k in range(Config.runs):
         y_train_merged = np.concatenate((y_train_merged, y), axis=0)
 
         # Reset the model
-
-        model = CNNet.CNN1D(Config.input_channels)
-        # model = CNNet.LSTMGyro(Config.input_channels, CNNet.lstm_units, CNNet.dense_units, CNNet.output_units)
-        # model = CNNet.ResNet1D()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = CNNet.CNN1D(Config.input_channels).to(device)
         criterion = nn.MSELoss()
+        # criterion = nn.L1Loss()
+        # criterion = CustomLoss(lambda_1, lambda_2)
+
+
         optimizer = optim.Adam(model.parameters(), lr=CNNet.learning_rate)
         # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.01)
-
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
 
 
@@ -84,8 +88,11 @@ for k in range(Config.runs):
 
                 optimizer.zero_grad()
                 # forward + backward + optimize
+
+                mean = torch.mean(inputs, dim=2)
                 outputs = model(inputs)  # forward pass
                 loss = criterion(outputs, labels)  # calculate the loss
+
                 # always the same 3 steps
                 # optimizer.zero_grad()  # zero the parameter gradients
                 loss.backward()  # backpropagation

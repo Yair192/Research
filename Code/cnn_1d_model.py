@@ -13,9 +13,11 @@ Config = CFG()
 # Train for 10 seconds
 # Window size of 5 seconds with step 5
 
-learning_rate = 0.01
-batch_size = 1
-epochs = 5
+
+learning_rate = 0.00001
+batch_size = 8
+epochs = 300
+
 ## END Raise input data parameters
 
 
@@ -41,40 +43,36 @@ class CNN1D(nn.Module):
         super(CNN1D, self).__init__()
 
         slope = 0.1
-        kernel = 10
+
+        kernel = 30
+
         stride = 1
         self.model_m = nn.Sequential(
-            nn.Conv1d(in_channels=input_ch, out_channels=3, kernel_size=kernel, stride=stride),
+            nn.Conv1d(in_channels=input_ch, out_channels=6, kernel_size=kernel, stride=stride),
             nn.LeakyReLU(negative_slope=slope),
             # nn.Conv1d(in_channels=3, out_channels=6, kernel_size=kernel, stride=stride),
             # nn.LeakyReLU(negative_slope=slope)
         )
 
-        # Calculate the number of features after convolution layers
-        self.num_features = self._calculate_num_features(input_ch)
 
-        self.fc_1 = nn.Linear(self.num_features, 1)
-        # self.fc_2 = nn.Linear(512, 128)
-        # self.fc_3 = nn.Linear(128, 1)
+        self.fc_1 = nn.Linear(156, 64)
+        self.fc_2 = nn.Linear(64, input_ch)
+        # self.fc_3 = nn.Linear(8, 1)
 
-    def _calculate_num_features(self, input_ch):
-        # Create a temporary tensor to get the output shape after convolution layers
-        with torch.no_grad():
-            temp_tensor = torch.zeros(1, input_ch, Config.window_size)
-            temp_output = self.model_m(temp_tensor)
-            num_features = temp_output.view(temp_output.size(0), -1).shape[1]
-        return num_features
 
     def forward(self, x):
-        x = self.model_m(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc_1(x)
-        x = torch.nn.functional.leaky_relu(x, 0.1)
-        # x = torch.nn.functional.tanh(x)
-        # x = self.fc_2(x)
+        batch = x.shape[0]
+        x_mean = torch.mean(x, dim=2)
+        # x_mean = torch.reshape(x_mean, (batch,1))
+        # x = x.unsqueeze(1)
+
+
+        x = self.fc_2(x)
+
         # x = torch.nn.functional.leaky_relu(x, 0.1)
         # x = torch.nn.functional.tanh(x)
         # x = self.fc_3(x)
+
         return x
 
 
