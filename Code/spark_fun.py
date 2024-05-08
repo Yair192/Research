@@ -56,19 +56,19 @@ indexes_array = np.array(ind_to_train)
 # x_to_train = sf_1_x
 # y_to_train = np.mean(x_to_train, axis=1)
 
-x_to_train = np.zeros([12, 100, 13000])
+# x_to_train = np.zeros([4, 100, 3, 13000])
 
-j = 0
-for i in range(0, x_to_train.shape[0] - 1, 3):
-    x_to_train[i, :, :] = data_array[j, :, : , 0]
-    x_to_train[i+1, :, :] = data_array[j, :, :, 1]
-    x_to_train[i+2, :, :] = data_array[j, :, :, 2]
-    j += 1
+# j = 0
+# for i in range(x_to_train.shape[0]):
+#     x_to_train[i, :, :] = data_array[j, :, : , 0]
+#     x_to_train[i+1, :, :] = data_array[j, :, :, 1]
+#     x_to_train[i+2, :, :] = data_array[j, :, :, 2]
+#     j += 1
 
 ## Try to mean all the data into 1 axis
-arrays_to_use = np.stack(x_to_train, axis=0)
+# arrays_to_use = np.stack(x_to_train, axis=0)
 # arrays_to_use = arrays_to_use[np.newaxis, :]
-x_to_train = arrays_to_use
+x_to_train = data_array
 y_to_train = np.mean(x_to_train, axis=2)
 
 # x_to_train = x_to_train[np.newaxis, :]
@@ -77,8 +77,8 @@ y_to_train = np.mean(x_to_train, axis=2)
 print(x_to_train.shape)
 print(y_to_train.shape)
 # Define the file path
-file_path = "x_data_sim.npy"
-filt_path_bias = "y_data_sim.npy"
+file_path = "/home/ystolero/Documents/Research/data/x_data_sim.npy"
+filt_path_bias = "/home/ystolero/Documents/Research/data/y_data_sim.npy"
 
 # Save the array
 np.save(file_path, x_to_train)

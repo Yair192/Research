@@ -14,9 +14,9 @@ class CFG:
         self.time_for_train = self.t_check
         self.time_for_model_based = self.t_check
         self.time_for_train_window = 2
-        self.time_for_test_window = self.t_check
+        self.time_for_test_window = 2
         self.time_for_train_step = 1
-        self.time_for_test_step = self.t_check
+        self.time_for_test_step = 1
         self.time_for_gt = 120
         self.records_to_train = 80
         self.N_to_simulate = 100

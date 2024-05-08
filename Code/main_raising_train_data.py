@@ -86,7 +86,7 @@ for k in range(Config.runs):
         y_train = torch.Tensor(y_train_merged)
 
         train_dataset = TensorDataset(X_train, y_train)
-        train_loader = DataLoader(train_dataset, batch_size=CNNet.batch_size, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=CNNet.batch_size, shuffle=True)
 
 
         # Train loop
@@ -150,10 +150,10 @@ for k in range(Config.runs):
                     'net': model.state_dict(),
                     'epoch': epoch,
                 }
-                if not os.path.isdir(f'/home/ystolero/Documents/Research/Simulation/checkpoints/run_{k}'):
-                    os.mkdir(f'/home/ystolero/Documents/Research/Simulation/checkpoints/run_{k}')
+                if not os.path.isdir(f'/home/ystolero/Documents/Research/checkpoints/run_{k}'):
+                    os.mkdir(f'/home/ystolero/Documents/Research/checkpoints/run_{k}')
                 torch.save(state,
-                           f'//home/ystolero/Documents/Research/Simulation/checkpoints/run_{k}/1d_cnn_ckpt_{i}.pth')
+                           f'//home/ystolero/Documents/Research/checkpoints/run_{k}/1d_cnn_ckpt_{i}.pth')
         print('==> Finished Training ...')
 print(f"The best epoch per IMU is: {best_epoch_for_imu}")
 print(f"The best loss per IMU is: {best_loss_for_imu}")

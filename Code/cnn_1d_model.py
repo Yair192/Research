@@ -13,8 +13,8 @@ Config = CFG()
 # Train for 10 seconds
 # Window size of 5 seconds with step 5
 
-learning_rate = 0.00001
-batch_size = 8
+learning_rate = 0.0001
+batch_size = 64
 epochs = 300
 
 
@@ -52,12 +52,12 @@ class CNN1D(nn.Module):
         self.model_m = nn.Sequential(
             nn.Conv1d(in_channels=input_ch, out_channels=6, kernel_size=kernel, stride=stride),
             nn.LeakyReLU(negative_slope=slope),
-            nn.MaxPool1d(kernel_size=10),
+            nn.MaxPool1d(kernel_size=5)
         )
 
 
-        self.fc_1 = nn.Linear(156, 64)
-        self.fc_2 = nn.Linear(64, input_ch)
+        self.fc_1 = nn.Linear(318, 128)
+        self.fc_2 = nn.Linear(128, input_ch)
         # self.fc_3 = nn.Linear(8, 1)
 
 
