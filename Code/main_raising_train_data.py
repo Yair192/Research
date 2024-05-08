@@ -63,7 +63,7 @@ for k in range(Config.runs):
         if i == Config.test_imu_ind:
             X, y = x_train_all[i, :Config.records_to_train, :, 0:Config.samples_to_train], y_train_all[i, :Config.records_to_train]
         else:
-            X, y = x_train_all[i, :, 0:Config.samples_to_train], y_train_all[i, :]
+            X, y = x_train_all[i, :, :, 0:Config.samples_to_train], y_train_all[i, :]
 
         X_win, y_win = create_seg_for_single_gyro(X, y, Config.window_size, Config.step_for_train)
 
