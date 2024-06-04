@@ -21,8 +21,8 @@ torch.cuda.manual_seed(seed)
 
 Config = CFG()
 
-x_train_all = np.load("x_data_sim.npy") * Config.deg_s_to_rad_s
-y_train_all = np.load("y_data_sim.npy") * Config.deg_s_to_rad_s
+x_train_all = np.load("/home/ystolero/Documents/Research/data/x_data_sim.npy") * Config.deg_s_to_rad_s
+y_train_all = np.load("/home/ystolero/Documents/Research/data/y_data_sim.npy") * Config.deg_s_to_rad_s
 
 best_epoch_for_imu = np.zeros(Config.IMU_to_train)
 best_loss_for_imu = np.zeros(Config.IMU_to_train)

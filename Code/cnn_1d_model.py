@@ -33,9 +33,9 @@ epochs = 300
 ## END Raise axis parameters
 
 ## START Multihead parameters
-# learning_rate = 0.00000005
-# batch_size = 8
-# epochs = 50
+# learning_rate = 0.00001
+# batch_size = 64
+# epochs = 300
 ## END Multihead parameters
 
 
@@ -107,44 +107,46 @@ class CNN1DRaiseInput(nn.Module):
     def __init__(self, input_ch):
         super(CNN1DRaiseInput, self).__init__()
         self.input_ch = input_ch
-        slope = 0.5
-        kernel = (self.input_ch, 5)
-        stride = 2
-        pad = self.input_ch + 10
+        slope = 0.1
+        kernel = 30
+        stride = 1
         self.model_m = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=2, kernel_size=kernel, stride=stride),
+            # nn.Conv1d(in_channels=input_ch, out_channels=12, kernel_size=kernel, stride=stride),
+            # nn.LeakyReLU(negative_slope=slope),
+            # nn.MaxPool1d(kernel_size=5),
+            # nn.Conv1d(in_channels=12, out_channels=15, kernel_size=kernel, stride=stride),
+            # nn.LeakyReLU(negative_slope=slope),
+            # nn.MaxPool1d(kernel_size=5),
+
+            nn.Conv1d(in_channels=input_ch, out_channels=6, kernel_size=kernel, stride=stride),
             nn.LeakyReLU(negative_slope=slope),
-            nn.BatchNorm2d(2),
-            nn.Conv2d(in_channels=2, out_channels=3, kernel_size=kernel, stride=stride, padding=pad),
-            nn.LeakyReLU(negative_slope=slope)
+            nn.MaxPool1d(kernel_size=5)
         )
 
-        # Calculate the number of features after convolution layers
-        self.num_features = self._calculate_num_features()
 
-        self.fc_1 = nn.Linear(self.num_features, 64)
-        self.fc_2 = nn.Linear(64, 32)
-        self.fc_3 = nn.Linear(32, self.input_ch)
+        # self.fc_1 = nn.Linear(60, 32)
+        # self.fc_2 = nn.Linear(32, 16)
+        # self.fc_3 = nn.Linear(16, input_ch)
 
-    def _calculate_num_features(self):
-        # Create a temporary tensor to get the output shape after convolution layers
-        with torch.no_grad():
-            temp_tensor = torch.zeros(1, 1, self.input_ch, Config.window_size)
-            temp_output = self.model_m(temp_tensor)
-            num_features = temp_output.view(temp_output.size(0), -1).shape[1]
-        return num_features
+        self.fc_1 = nn.Linear(318, 128)
+        self.fc_2 = nn.Linear(128, input_ch)
+
 
     def forward(self, x):
-        x = x.unsqueeze(1)
+        # x = self.model_m(x)
+        # x = torch.flatten(x, start_dim=1)
+        # x = self.fc_1(x)
+        # x = torch.nn.functional.leaky_relu(x, 0.1)
+        # x = self.fc_2(x)
+        # x = torch.nn.functional.leaky_relu(x, 0.1)
+        # x = self.fc_3(x)
+
+
         x = self.model_m(x)
-        x = x.view(x.size(0), -1)
+        x = torch.flatten(x, start_dim=1)
         x = self.fc_1(x)
-        # x = torch.nn.functional.leaky_relu(x, 0.1)
-        x = torch.nn.functional.tanh(x)
+        x = torch.nn.functional.leaky_relu(x, 0.1)
         x = self.fc_2(x)
-        # x = torch.nn.functional.leaky_relu(x, 0.1)
-        x = torch.nn.functional.tanh(x)
-        x = self.fc_3(x)
         return x
 
 
@@ -155,49 +157,50 @@ class MultiHeadCNN(nn.Module):
         self.input_ch = input_ch
         self.model = nn.ModuleList()
         slope = 0.1
-        kernel = 5
+        kernel = 30
         stride = 1
-        for i in range(input_ch):
+        for i in range(0,input_ch,3):
             self.model.append(nn.Sequential(
-                nn.Conv1d(in_channels=1, out_channels=3, kernel_size=kernel, stride=stride),
-                nn.LeakyReLU(negative_slope=slope),
                 nn.Conv1d(in_channels=3, out_channels=6, kernel_size=kernel, stride=stride),
-                nn.LeakyReLU(negative_slope=slope)
+                nn.LeakyReLU(negative_slope=slope),
+                nn.MaxPool1d(kernel_size=2),
+                nn.Conv1d(in_channels=6, out_channels=9, kernel_size=kernel, stride=stride),
+                nn.LeakyReLU(negative_slope=slope),
+                nn.MaxPool1d(kernel_size=2),
+                nn.Conv1d(in_channels=9, out_channels=12, kernel_size=kernel, stride=stride),
+                nn.LeakyReLU(negative_slope=slope),
+                nn.MaxPool1d(kernel_size=2)
             ))
 
-        self.conv = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=3, kernel_size=kernel, stride=stride),
-            nn.LeakyReLU(negative_slope=slope),
-            nn.Conv1d(in_channels=3, out_channels=6, kernel_size=kernel, stride=stride),
-            nn.LeakyReLU(negative_slope=slope)
-        )
+        # self.conv = nn.Sequential(
+        #     nn.Conv1d(in_channels=1, out_channels=3, kernel_size=kernel, stride=stride),
+        #     nn.LeakyReLU(negative_slope=slope),
+        #     nn.Conv1d(in_channels=3, out_channels=6, kernel_size=kernel, stride=stride),
+        #     nn.LeakyReLU(negative_slope=slope)
+        # )
 
-        # Calculate the number of features after convolution layers
-        self.num_features = self._calculate_num_features(input_ch)
+        # # Calculate the number of features after convolution layers
+        # self.num_features = self._calculate_num_features(input_ch)
 
-        self.fc_1 = nn.Linear(self.num_features, 64)
-        self.fc_2 = nn.Linear(64, 32)
-        self.fc_3 = nn.Linear(32, 1)
+        self.fc_1 = nn.Linear(132*int(self.input_ch/3), 128)
+        self.fc_2 = nn.Linear(128, self.input_ch)
 
-    def _calculate_num_features(self, input_ch):
-        # Create a temporary tensor to get the output shape after convolution layers
-        with torch.no_grad():
-            temp_tensor = torch.zeros(1, 1, Config.window_size)
-            temp_output = self.conv(temp_tensor)
-            num_features = temp_output.view(temp_output.size(0), -1).shape[1]
-        return num_features * input_ch
+    # def _calculate_num_features(self, input_ch):
+    #     # Create a temporary tensor to get the output shape after convolution layers
+    #     with torch.no_grad():
+    #         temp_tensor = torch.zeros(1, 1, Config.window_size)
+    #         temp_output = self.conv(temp_tensor)
+    #         num_features = temp_output.view(temp_output.size(0), -1).shape[1]
+    #     return num_features * input_ch
 
     def forward(self, x):
         tensors_list = []
-        for index in range(0, self.input_ch):
-            tensors_list.append(self.model[index](x[:, index: index + 1, :]))
+        for index in range(0, self.input_ch, 3):
+            tensors_list.append(self.model[int(index/3)](x[:, index: index + 3, :]))
         conv_heads = torch.stack(tensors_list, dim=1)
         conv_heads = conv_heads.view(conv_heads.size(0), -1)
         # Forward through the fully connected layer
         fc_output = self.fc_1(conv_heads)
         fc_output = torch.nn.functional.leaky_relu(fc_output, 0.1)
         fc_output = self.fc_2(fc_output)
-        fc_output = torch.nn.functional.leaky_relu(fc_output, 0.1)
-        fc_output = self.fc_3(fc_output)
-        fc_output = torch.nn.functional.leaky_relu(fc_output, 0.1)
         return fc_output

@@ -35,8 +35,8 @@ def load_data(imu_to_load, n, num_of_samples, num_of_axis, folder_path):
 
 
 def rmse_model_based_calc(samples):
-    x_train_all = np.load("x_data_sim.npy") * Config.deg_s_to_rad_s
-    y_train_all = np.load("y_data_sim.npy") * Config.deg_s_to_rad_s
+    x_train_all = np.load("/home/ystolero/Documents/Research/data/x_data_sim.npy") * Config.deg_s_to_rad_s
+    y_train_all = np.load("/home/ystolero/Documents/Research/data/y_data_sim.npy") * Config.deg_s_to_rad_s
     x_test = x_train_all[Config.test_imu_ind, Config.records_to_train:, :, :samples]
     y_test = y_train_all[Config.test_imu_ind, Config.records_to_train:]
     rmse_model_based = rmse_calc(np.mean(x_test, axis=2), y_test)

@@ -10,7 +10,7 @@ class CFG:
         self.f = 148
         self.dt = 1 / self.f
         self.t = 108
-        self.t_check = 10
+        self.t_check = 30
         self.time_for_train = self.t_check
         self.time_for_model_based = self.t_check
         self.time_for_train_window = 2

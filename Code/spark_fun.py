@@ -1,8 +1,12 @@
 import os
 import pandas as pd
 import numpy as np
+
 import matplotlib.pyplot as plt
 from utils import running_avg
+
+seed = 111
+np.random.seed(seed)
 
 
 samples = 13000
@@ -56,23 +60,57 @@ indexes_array = np.array(ind_to_train)
 # x_to_train = sf_1_x
 # y_to_train = np.mean(x_to_train, axis=1)
 
-# x_to_train = np.zeros([4, 100, 3, 13000])
 
-# j = 0
-# for i in range(x_to_train.shape[0]):
-#     x_to_train[i, :, :] = data_array[j, :, : , 0]
-#     x_to_train[i+1, :, :] = data_array[j, :, :, 1]
-#     x_to_train[i+2, :, :] = data_array[j, :, :, 2]
-#     j += 1
+
+x_to_train = np.zeros([5, 100, 3, 13000])
+
+for i in range(4):
+    x_to_train[i, :, 0,:] = data_array[i, :, : , 0]
+    x_to_train[i, :, 1,:] = data_array[i, :, :, 1]
+    x_to_train[i, :, 2,:] = data_array[i, :, :, 2]
 
 ## Try to mean all the data into 1 axis
 # arrays_to_use = np.stack(x_to_train, axis=0)
 # arrays_to_use = arrays_to_use[np.newaxis, :]
-x_to_train = data_array
-y_to_train = np.mean(x_to_train, axis=2)
+# x_to_train = data_array
+y_to_train = np.mean(x_to_train, axis=3)
 
 # x_to_train = x_to_train[np.newaxis, :]
 # y_to_train = y_to_train[np.newaxis, :]
+
+### Simulate new data based on the exists
+
+mean_all = np.mean(x_to_train, axis=3)
+mean_all = np.mean(mean_all, axis=1)
+
+std_all = np.std(x_to_train, axis=3)
+std_all = np.mean(np.std(std_all, axis=1))
+
+new_array = np.zeros([100, 3, 13000])
+new_array_biases = np.zeros([100, 3])
+
+sim_bias_x = np.random.uniform(low=np.min(mean_all[:, 0]), high=np.max(mean_all[:, 0]), size=(1))
+sim_bias_y = np.random.uniform(low=np.min(mean_all[:, 1]), high=np.max(mean_all[:, 1]), size=(1))
+sim_bias_z = np.random.uniform(low=np.min(mean_all[:, 2]), high=np.max(mean_all[:, 2]), size=(1))
+
+for i in range(new_array.shape[0]):
+
+    new_array_biases[i, 0] = sim_bias_x
+    new_array_biases[i, 1] = sim_bias_y
+    new_array_biases[i, 2] = sim_bias_z
+
+    x_axis = np.random.normal(loc=sim_bias_x, scale=0.01, size=(13000))
+    y_axis = np.random.normal(loc=sim_bias_y, scale=0.01, size=(13000))
+    z_axis = np.random.normal(loc=sim_bias_z, scale=0.01, size=(13000))
+
+    new_array[i, 0] = x_axis
+    new_array[i, 1] = y_axis
+    new_array[i, 2] = z_axis
+
+##### END SIMULATION
+
+x_to_train[4] = new_array
+y_to_train[4] = new_array_biases
 
 print(x_to_train.shape)
 print(y_to_train.shape)
@@ -83,3 +121,4 @@ filt_path_bias = "/home/ystolero/Documents/Research/data/y_data_sim.npy"
 # Save the array
 np.save(file_path, x_to_train)
 np.save(filt_path_bias, y_to_train)
+
